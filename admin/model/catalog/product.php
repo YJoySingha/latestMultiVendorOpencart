@@ -203,9 +203,10 @@ class ModelCatalogProduct extends Model {
 
             /*START OVICKO MULTISELLER*/
 	public function approve($product_id) {
-		$product_info = $this->getProduct($product_id);
+		$product_info = $this->getProductToApprove($product_id);
 		if ($product_info) {
 			$this->db->query("UPDATE " . DB_PREFIX . "product SET approve = '1' WHERE product_id = '" . (int)$product_id . "'");
+			$this->db->query("UPDATE " . DB_PREFIX . "product_has_quantity SET quantity = (quantity + quantity_added_by_seller) , quantity_added_by_seller = '0' , is_approve = '1' WHERE phq_product_id = '" . (int)$product_id . "' ");
 		}		
 	}
 	public function getProductSeller($product_id) {
@@ -567,15 +568,35 @@ class ModelCatalogProduct extends Model {
 	}
 
 	public function getProduct($product_id) {
-		$query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+		$query = $this->db->query("SELECT DISTINCT * FROM " . DB_PREFIX . "product p 
+		LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
+		WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+
+		return $query->row;
+	}
+	public function getProductToApprove($product_id) {
+		$query = $this->db->query("SELECT p.product_id, p.model,p.sku,p.upc,p.ean,p.jan,p.isbn,p.mpn,p.location,
+			p.stock_status_id,p.image,p.manufacturer_id,p.shipping,p.price,p.points,p.tax_class_id,p.date_available,
+			p.weight,p.weight_class_id,p.length,p.width,p.height,p.length_class_id,p.subtract,p.minimum,
+			p.sort_order,p.status,p.viewed,p.date_added,p.date_modified,p.approve,p.seller_id,p.documentation,phq.*
+		FROM " . DB_PREFIX . "product p
+		LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
+		LEFT JOIN  " . DB_PREFIX . "product_has_quantity phq ON (p.product_id = phq.phq_product_id)	
+		WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
 
 		return $query->row;
 	}
 
-	public function getProducts($data = array()) {         
-		$sql = "SELECT p.*,pd.*,vd.vproduct_id,vds.username,vds.firstname,vds.lastname 
-		FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
+	public function getProducts($data = array()) {    
+
+		$sql = "SELECT p.product_id, p.model,p.sku,p.upc,p.ean,p.jan,p.isbn,p.mpn,p.location,
+			p.stock_status_id,p.image,p.manufacturer_id,p.shipping,p.price,p.points,p.tax_class_id,p.date_available,
+			p.weight,p.weight_class_id,p.length,p.width,p.height,p.length_class_id,p.subtract,p.minimum,
+			p.sort_order,p.status,p.viewed,p.date_added,p.date_modified,p.approve,p.seller_id,p.documentation,phq.*, pd.*,vd.vproduct_id,vds.username,vds.firstname,vds.lastname 
+		FROM " . DB_PREFIX . "product p 
+		LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
 		LEFT JOIN " . DB_PREFIX . "seller vd ON (pd.product_id = vd.vproduct_id) 
+		LEFT JOIN  " . DB_PREFIX . "product_has_quantity phq ON (p.product_id = phq.phq_product_id)	
 		LEFT JOIN " . DB_PREFIX . "sellers vds ON (vd.seller_id = vds.seller_id)  
 		WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'";
 
@@ -640,9 +661,103 @@ class ModelCatalogProduct extends Model {
 
 			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
 		}
-
+		
 		$query = $this->db->query($sql);
 
+		return $query->rows;
+	}
+	
+	public function getProductsWithMultipleVendorsId($data = array()) {    
+
+		$sql = "SELECT p.product_id, p.model,p.sku,p.upc,p.ean,p.jan,p.isbn,p.mpn,p.location,
+			p.stock_status_id,p.image,p.manufacturer_id,p.shipping,p.price,p.points,p.tax_class_id,p.date_available,
+			p.weight,p.weight_class_id,p.length,p.width,p.height,p.length_class_id,p.subtract,p.minimum,
+			p.sort_order,p.status,p.viewed,p.date_added,p.date_modified,p.approve,p.seller_id,p.documentation,phq.*, pd.*,vd.vproduct_id,vds.username,vds.firstname,vds.lastname
+		FROM " . DB_PREFIX . "product p 
+		LEFT JOIN  " . DB_PREFIX . "product_has_quantity phq ON (p.product_id = phq.phq_product_id) 
+		LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
+		LEFT JOIN " . DB_PREFIX . "seller vd ON (pd.product_id = vd.vproduct_id) 		
+		LEFT JOIN " . DB_PREFIX . "sellers vds ON (vd.seller_id = vds.seller_id)  
+		WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'";
+		
+
+		
+		
+	
+		if (!empty($data['filter_name'])) {
+			$sql .= " AND pd.name LIKE '" . $this->db->escape($data['filter_name']) . "%'";
+		}
+
+		if (!empty($data['filter_model'])) {
+			$sql .= " AND p.model LIKE '" . $this->db->escape($data['filter_model']) . "%'";
+		}
+		
+		
+
+		if (isset($data['filter_seller_userName']) && !is_null($data['filter_seller_userName'])) {
+			$sql .= " AND vd.seller_id = '" . (int)$data['filter_seller_userName'] . "'";
+		}
+		
+		
+		if (isset($data['filter_approve']) && !is_null($data['filter_approve'])) {
+			$sql .= " AND p.approve = '" . (int)$data['filter_approve'] . "'";
+		}
+
+		if (!empty($data['filter_price'])) {
+			$sql .= " AND p.price LIKE '" . $this->db->escape($data['filter_price']) . "%'";
+		}
+
+		if (isset($data['filter_quantity']) && $data['filter_quantity'] !== '') {
+			$sql .= " AND phq.quantity = '" . (int)$data['filter_quantity'] . "'";
+		}
+
+		if (isset($data['filter_status']) && $data['filter_status'] !== '') {
+			$sql .= " AND p.status = '" . (int)$data['filter_status'] . "'";
+		}
+		
+
+		$sql .= "GROUP BY phq.product_has_quantity_id";
+				$sort_data = array(
+				'pd.name',
+				'p.model',
+				'p.price',
+				'phq.quantity',
+				'phq.seller_userName',
+				'p.approve',
+				'p.status',
+				'p.sort_order'
+			);
+			
+
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			$sql .= " ORDER BY " . $data['sort'];
+		} else {
+			$sql .= " ORDER BY pd.name";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+		
+		$query = $this->db->query($sql);
+		//echo"<pre>";
+		//print_r($query);
+		//die;
 		return $query->rows;
 	}
 

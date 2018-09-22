@@ -539,6 +539,7 @@ class ControllerSellerProduct extends Controller {
 				'special'    => $special,
 				'image'      => $image,
 				'quantity_added_by_seller'   => $result['quantity_added_by_seller'],
+				'quantity'   => $result['quantity'],
 				'status'     => ($result['status'] ? $this->language->get('text_enabled') : $this->language->get('text_disabled')),
 				'selected'   => isset($this->request->post['selected']) && in_array($result['product_id'], $this->request->post['selected']),
 				'edit'       => $edit
@@ -1144,13 +1145,13 @@ class ControllerSellerProduct extends Controller {
 		}
 
 		if (isset($this->request->post['quantity'])) {
-			$data['quantity_added_by_seller'] = $this->request->post['quantity'];
+			$data['quantity'] = $this->request->post['quantity'];
 		} elseif (!empty($product_info)) {
 
-			$data['quantity_added_by_seller'] = $product_info['quantity_added_by_seller'];
+			$data['quantity'] = $product_info['quantity'];
 
 		} else {
-			$data['quantity_added_by_seller'] = 0;
+			$data['quantity'] = 0;
 		}
 
 		if (isset($this->request->post['sort_order'])) {

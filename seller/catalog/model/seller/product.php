@@ -155,15 +155,19 @@ public function getAssignLimit() {
 	}
 	public function editProduct($product_id, $data) {
 
-		$query = $this->db->query("SELECT * from " . DB_PREFIX . "product_has_quantity WHERE phq_product_id = '" . (int)$product_id . "'");
+		$query = $this->db->query("SELECT * from " . DB_PREFIX . "product_has_quantity WHERE phq_product_id = '" . (int)$product_id . "' AND  seller_id='".(int)$this->seller->getId()."' " );
 		if($query->num_rows > 0)
 		{
-			$this->db->query("UPDATE " . DB_PREFIX . "product_has_quantity SET quantity_added_by_seller = '" . (int)$data['quantity'] . "'  WHERE phq_product_id = '" . (int)$product_id . "'");
-			
+			// print_r($this->seller->getId());
+			// die;
+			$sql = $this->db->query("UPDATE " . DB_PREFIX . "product_has_quantity SET quantity_added_by_seller = '" . (int)$data['quantity'] . "' , seller_id='".(int)$this->seller->getId()."', is_approve = '0'  WHERE phq_product_id = '" . (int)$product_id . "' AND  seller_id='".(int)$this->seller->getId()."' ");
+
+			$this->db->query("UPDATE " . DB_PREFIX . "product SET approve = '0'  WHERE product_id = '" . (int)$product_id . "'");
+
 		}
 		else
-		{
-			$this->db->query("INSERT INTO " . DB_PREFIX . "product_has_quantity SET quantity_added_by_seller = '" . (int)$data['quantity'] . "', seller_id='".(int)$this->seller->getId()."', phq_product_id = '" . (int)$product_id . "', date_added_at = NOW()");
+		{			
+			$this->db->query("INSERT INTO " . DB_PREFIX . "product_has_quantity SET quantity_added_by_seller = '" . (int)$data['quantity'] . "', seller_id='".(int)$this->seller->getId()."', seller_userName = '".$this->seller->getUserName()."', phq_product_id = '" . (int)$product_id . "', is_approve = '0', date_added_at = NOW()");
 		}
 			
 		/**new query**/	
@@ -362,27 +366,30 @@ public function getAssignLimit() {
 			p.sort_order,p.status,p.viewed,p.date_added,p.date_modified,p.approve,p.seller_id,p.documentation,
 			pd.*,phq.*,vd.price as sprice,vd.quantity as squantity FROM " . DB_PREFIX . "product p 
 			LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) 
-			LEFT JOIN  " . DB_PREFIX . "product_has_quantity phq ON (p.product_id = phq.phq_product_id)	
+			LEFT JOIN  " . DB_PREFIX . "product_has_quantity phq ON (p.product_id = phq.phq_product_id)	AND phq.seller_id = ". $seller ."
 			LEFT JOIN " . DB_PREFIX . "sellers_products vd ON (pd.product_id = vd.product_id) 
 			LEFT JOIN " . DB_PREFIX . "sellers vds ON (vd.seller_id = vds.seller_id) "; 
-
 
 			if (!empty($data['filter_category_id'])) {
 				$sql .= " LEFT JOIN " . DB_PREFIX . "product_to_category p2c ON (p.product_id = p2c.product_id)";			
 			}
+			if ($seller) {	
+				$sql .= " WHERE not p.seller_id IN('" . $seller . "') AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'"; 
+			} else {
+				$sql .= " WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'"; 
+			}
 
-			if (!empty($data['filter_name'])) {
-				$sql .= " AND LCASE(pd.name) LIKE '" . $this->db->escape(utf8_strtolower($data['filter_name'])) . "%'";
+			if (!empty($data['filter_name1'])) {
+				$sql .= "AND LCASE(pd.name) LIKE '" . $this->db->escape(utf8_strtolower($data['filter_name1'])) . "%'";
 			}
 			if (!empty($data['filter_model'])) {
-				$sql .= " AND LCASE(p.model) LIKE '" . $this->db->escape(utf8_strtolower($data['filter_model'])) . "%'";
+				$sql .= "AND LCASE(p.model) LIKE '" . $this->db->escape(utf8_strtolower($data['filter_model'])) . "%'";
 			}
-
 			if (!empty($data['filter_price'])) {
 				$sql .= " AND vd.price LIKE '" . $this->db->escape($data['filter_price']) . "%'";
 			}
 			if (isset($data['filter_quantity']) && !is_null($data['filter_quantity'])) {
-				$sql .= " AND vd.quantity = '" . $this->db->escape($data['filter_quantity']) . "'";
+				$sql .= "WHERE vd.quantity = '" . $this->db->escape($data['filter_quantity']) . "'";
 			}
 			if (isset($data['filter_status']) && !is_null($data['filter_status'])) {
 				$sql .= " AND p.status = '" . (int)$data['filter_status'] . "'";
@@ -430,8 +437,7 @@ public function getAssignLimit() {
 				}	
 				$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
 			}	
-			echo "here1";
-			print_r($data);			
+
 			$query = $this->db->query($sql);
 			// echo "<pre>";
 			// print_r($query);

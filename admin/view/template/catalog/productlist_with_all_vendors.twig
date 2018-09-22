@@ -126,6 +126,7 @@
                       <td class="text-left">{% if sort == 'p.model' %} <a href="{{ sort_model }}" class="{{ order|lower }}">{{ column_model }}</a> {% else %} <a href="{{ sort_model }}">{{ column_model }}</a> {% endif %}</td>
                       <td class="text-right">{% if sort == 'p.price' %} <a href="{{ sort_price }}" class="{{ order|lower }}">{{ column_price }}</a> {% else %} <a href="{{ sort_price }}">{{ column_price }}</a> {% endif %}</td>
                       <td class="text-right">{% if sort == 'p.quantity' %} <a href="{{ sort_quantity }}" class="{{ order|lower }}">{{ column_quantity }}</a> {% else %} <a href="{{ sort_quantity }}">{{ column_quantity }}</a> {% endif %}</td>
+					  <td class="text-right">Added By</td>
                       <td class="text-left">{% if sort == 'p.status' %} <a href="{{ sort_status }}" class="{{ order|lower }}">{{ column_status }}</a> {% else %} <a href="{{ sort_status }}">{{ column_status }}</a> {% endif %}</td>
 
                    <!--START OVICKO MULTISELLER-->
@@ -156,8 +157,10 @@
                       {{ product.price }}
                       {% endif %}</td>
                     <td class="text-right">{% if product.quantity <= 0 %} <span class="label label-warning">{{ 0 }}</span> {% elseif product.quantity <= 5 %} <span class="label label-danger">{{ product.quantity }}</span> {% else %} <span class="label label-success">{{ product.quantity }}</span> {% endif %}</td>
+					<td class="text-left">{{ product.seller_userName }}</td> 
                     <td class="text-left">{{ product.status }}</td>
                     <!--START OVICKO MULTISELLER-->
+					 
                     <td class="text-left">{{ product.seller_name }}</td>
                     <td class="text-left">{{ product.approve }}</td>
                     <!--END OVICKO MULTISELLER-->

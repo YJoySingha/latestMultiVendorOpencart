@@ -91,7 +91,7 @@
               <div class="form-group">
                 <label class="col-sm-2 control-label" for="input-quantity"><?php echo $entry_quantity; ?></label>
                 <div class="col-sm-10">
-                  <input type="text" name="quantity" value="<?php echo $quantity_added_by_seller; ?>" placeholder="<?php echo $entry_quantity; ?>" id="input-quantity" class="form-control" />
+                  <input type="text" name="quantity" value="<?php echo $quantity; ?>" placeholder="<?php echo $entry_quantity; ?>" id="input-quantity" class="form-control" />
                 </div>
               </div>
               <div class="form-group">
